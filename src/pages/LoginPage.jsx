@@ -2,20 +2,62 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { Shield, Briefcase, LogIn } from 'lucide-react';
-
+import { supabase } from "../lib/supabaseClient"
+import { useNavigate } from "react-router-dom";
 const LoginPage = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('admin');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (email && password) {
-      login(email, password, role);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    // 🔐 Step 1: Login with Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert("Login failed: " + error.message);
+      return;
     }
-  };
 
+    console.log("Login success:", data);
+
+    // 📦 Step 2: Fetch role from DB
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("role")
+      .eq("email", email)
+      .single();
+
+    if (userError) {
+      alert("Error fetching user role");
+      return;
+    }
+
+    const userRole = userData.role;
+
+    // ❗ Step 3: Validate selected role vs DB role
+    if (userRole !== role) {
+      alert("You selected wrong role!");
+      return;
+    }
+
+    // ✅ Step 4: Update AuthContext
+    login(email, password, userRole);
+
+    // 🚀 Step 5: Navigate
+    navigate("/dashboard");
+
+  } catch (err) {
+    console.log("Unexpected error:", err);
+  }
+};
   return (
     <div className="min-h-svh flex items-center justify-center bg-background">
       <motion.div
