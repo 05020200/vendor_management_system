@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 
+
 const AddWorkerPage = () => {
   const [form, setForm] = useState({ name: '', email: '', role: 'worker' });
   const [success, setSuccess] = useState(false);
