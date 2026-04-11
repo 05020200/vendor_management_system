@@ -1,19 +1,53 @@
+import { supabase } from "../lib/supabaseClient"
+
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 
-
 const AddWorkerPage = () => {
   const [form, setForm] = useState({ name: '', email: '', role: 'worker' });
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSuccess(true);
-    setTimeout(() => {
-      setSuccess(false);
-      setForm({ name: '', email: '', role: 'worker' });
-    }, 3000);
+
+    // Prevent multiple clicks
+    if (loading) return;
+
+    try {
+      setLoading(true);
+
+      const { error } = await supabase
+        .from('workers')
+        .insert([
+          {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            role: form.role
+          }
+        ]);
+
+      if (error) {
+        alert(error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Success UI
+      setSuccess(true);
+
+      setTimeout(() => {
+        setSuccess(false);
+        setForm({ name: '', email: '', role: 'worker' });
+      }, 3000);
+
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -23,8 +57,12 @@ const AddWorkerPage = () => {
 
       <div className="bg-card rounded-xl p-6 shadow-card">
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* Name */}
           <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5 block">Name</label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5 block">
+              Name
+            </label>
             <input
               type="text"
               value={form.name}
@@ -34,8 +72,12 @@ const AddWorkerPage = () => {
               required
             />
           </div>
+
+          {/* Email */}
           <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5 block">Email</label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5 block">
+              Email
+            </label>
             <input
               type="email"
               value={form.email}
@@ -45,8 +87,12 @@ const AddWorkerPage = () => {
               required
             />
           </div>
+
+          {/* Role */}
           <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5 block">Role</label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5 block">
+              Role
+            </label>
             <select
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -57,6 +103,7 @@ const AddWorkerPage = () => {
             </select>
           </div>
 
+          {/* Button / Success */}
           <AnimatePresence mode="wait">
             {success ? (
               <motion.div
@@ -74,14 +121,16 @@ const AddWorkerPage = () => {
               <motion.button
                 key="submit"
                 type="submit"
+                disabled={loading}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
-                className="w-full bg-gold hover:bg-gold-glow text-primary-foreground py-2.5 rounded-md font-semibold text-sm transition-colors duration-200"
+                className="w-full bg-gold hover:bg-gold-glow text-primary-foreground py-2.5 rounded-md font-semibold text-sm transition-colors duration-200 disabled:opacity-50"
               >
-                Add Worker
+                {loading ? "Adding..." : "Add Worker"}
               </motion.button>
             )}
           </AnimatePresence>
+
         </form>
       </div>
     </div>
